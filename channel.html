@@ -527,3 +527,213 @@ renderVideos();
 
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VidVend - התחברות Firebase</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; background:#121212; color:white; direction: rtl; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0;}
+  input, button { font-size: 1rem; padding: 10px; margin: 5px; border-radius: 5px; border: none; }
+  input { width: 250px; }
+  button { background-color: #4285F4; color: white; cursor: pointer; }
+  button:hover { background-color: #357AE8; }
+</style>
+</head>
+<body>
+
+<h2>התחבר או הירשם ב-VidVend</h2>
+
+<input type="email" id="email" placeholder="הכנס אימייל" />
+<input type="password" id="password" placeholder="הכנס סיסמה" />
+<button onclick="signUp()">הרשם</button>
+<button onclick="signIn()">התחבר</button>
+<button onclick="signOut()" style="background:#e53935;">התנתק</button>
+
+<script>
+  // Firebase config - החלף בפרטי הפרויקט שלך
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "SENDER_ID",
+    appId: "APP_ID"
+  };
+
+  // אתחל Firebase
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  // הרשמה
+  function signUp() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        alert('נרשמת בהצלחה!');
+        console.log(userCredential.user);
+      })
+      .catch(error => alert(error.message));
+  }
+
+  // התחברות
+  function signIn() {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    auth.signInWithEmailAndPassword(email, password)
+      .then(userCredential => {
+        alert('התחברת בהצלחה!');
+        // לאחר התחברות, נוכל להפנות לדף הערוץ
+        window.location.href = 'channel.html';
+      })
+      .catch(error => alert(error.message));
+  }
+
+  // התנתקות
+  function signOut() {
+    auth.signOut().then(() => alert('התנתקת בהצלחה!'));
+  }
+
+  // האזנה למצב התחברות
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      console.log('משתמש מחובר:', user.email);
+    } else {
+      console.log('אין משתמש מחובר');
+    }
+  });
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>VidVend - הערוץ שלי</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; background:#121212; color:white; direction: rtl; padding: 20px; }
+  h1 { margin-bottom: 0.5em; }
+  input, button { font-size: 1rem; padding: 10px; margin: 5px 0; border-radius: 5px; border: none; }
+  input { width: 80%; }
+  button { background-color: #4285F4; color: white; cursor: pointer; }
+  button:hover { background-color: #357AE8; }
+  .video-item { background: #222; margin: 15px 0; padding: 10px; border-radius: 8px; }
+  iframe { border-radius: 8px; }
+</style>
+</head>
+<body>
+
+<h1>הערוץ שלי</h1>
+<p id="userEmail"></p>
+<button onclick="logout()" style="background:#e53935;">התנתק</button>
+
+<h3>הוסף סרטון (קישור YouTube):</h3>
+<input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." />
+<button onclick="addVideo()">הוסף</button>
+
+<div id="videosContainer">
+  <h3>הסרטונים שלך:</h3>
+  <div id="videosList"></div>
+</div>
+
+<script>
+  // Firebase config - החלף בפרטי הפרויקט שלך
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT",
+    storageBucket: "YOUR_PROJECT.appspot.com",
+    messagingSenderId: "SENDER_ID",
+    appId: "APP_ID"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  let currentUser;
+
+  auth.onAuthStateChanged(user => {
+    if (user) {
+      currentUser = user;
+      document.getElementById('userEmail').textContent = 'מחובר כ־: ' + user.email;
+      loadVideos();
+    } else {
+      window.location.href = 'index.html';
+    }
+  });
+
+  function logout() {
+    auth.signOut().then(() => {
+      window.location.href = 'index.html';
+    });
+  }
+
+  function addVideo() {
+    const url = document.getElementById('videoUrl').value.trim();
+    if (!url) {
+      alert('אנא הזן קישור סרטון תקין');
+      return;
+    }
+    const videoId = extractYouTubeId(url);
+    if (!videoId) {
+      alert('קישור YouTube לא תקין');
+      return;
+    }
+
+    db.collection('videos').add({
+      userId: currentUser.uid,
+      url: url,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+      document.getElementById('videoUrl').value = '';
+      loadVideos();
+    }).catch(err => {
+      alert('שגיאה בהוספת הסרטון: ' + err.message);
+    });
+  }
+
+  function loadVideos() {
+    db.collection('videos')
+      .where('userId', '==', currentUser.uid)
+      .orderBy('timestamp', 'desc')
+      .get()
+      .then(querySnapshot => {
+        const container = document.getElementById('videosList');
+        container.innerHTML = '';
+        if (querySnapshot.empty) {
+          container.innerHTML = '<p>אין סרטונים.</p>';
+          return;
+        }
+        querySnapshot.forEach(doc => {
+          const data = doc.data();
+          const videoId = extractYouTubeId(data.url);
+          if (videoId) {
+            const div = document.createElement('div');
+            div.className = 'video-item';
+            div.innerHTML = `<iframe width="320" height="180" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allowfullscreen></iframe>`;
+            container.appendChild(div);
+          }
+        });
+      });
+  }
+
+  function extractYouTubeId(url) {
+    const match = url.match(/v=([a-zA-Z0-9_-]+)/);
+    return match ? match[1] : null;
+  }
+</script>
+
+</body>
+</html>
